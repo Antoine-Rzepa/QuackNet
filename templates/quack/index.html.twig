@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Quack index{% endblock %}
+
+{% block body %}
+    {% if is_granted('IS_ANONYMOUS') %}
+        <a href="{{ path('app_login') }}">Login</a>
+        <a href="{{ path('app_register') }}">Register</a>
+    {% endif %}
+    {% for msg in app.session.flashBag.get('note') %}
+        <div>
+            {{ msg }}
+        </div>
+    {% endfor %}
+    <h1>Quack index</h1>
+
+    <div>
+        {% include 'quack/_filter.html.twig' with {form: form} only %}
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Author</th>
+                <th>Tags</th>
+                <th>Content</th>
+                <th>Created_at</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for quack in quacks %}
+            <tr>
+                <td><img src="{{ quack.picture }}"></td>
+                <td>{{ quack.author.duckname }}</td>
+                <td>{% for tag in quack.tags %}<div>{{ tag.name }}</div>{% endfor %}</td>
+                <td>{{ quack.content }}</td>
+                <td>{{ quack.createdAt ? quack.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('quack_show', {'id': quack.id}) }}">show</a>
+                    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                    <a href="{{ path('quack_comment', {'id': quack.id}) }}">Comment</a>
+                    {% endif %}
+                    {% if is_granted('IS_AUTHENTICATED_FULLY') and quack.author.id == app.user.id %}
+                        <a href="{{ path('quack_edit', {'id': quack.id}) }}">edit</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% for comment in quack.quacks %}
+                <tr>
+                    <td style="padding-left: 50px"><img src="{{ comment.picture }}"></td>
+                    <td>{{ comment.author.duckname }}</td>
+                    <td>{% for tag in comment.tags %}<div>{{ tag.name }}</div>{% endfor %}</td>
+                    <td>{{ comment.content }}</td>
+                    <td>{{ comment.createdAt ? comment.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                    <td>
+                     <a href="{{ path('quack_show', {'id': comment.id}) }}">show</a>
+                        {% if is_granted('IS_AUTHENTICATED_FULLY') and comment.author.id == app.user.id or is_granted('IS_AUTHENTICATED_FULLY') and comment.quack and comment.quack.author.id == app.user.id %}
+                            <form method="post" action="{{ path('quack_delete', {'id': comment.id}) }}" onsubmit="return confirm('Are you sure you want to delete this item?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                                <button class="btn">Delete</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="4">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+        <a href="{{ path('quack_new') }}">Create new</a>
+{% endblock %}
